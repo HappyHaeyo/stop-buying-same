@@ -1,304 +1,375 @@
-import React, { useState, useEffect } from 'react';
-import { Upload, Download, Palette, Filter, Search, Trash2, Plus } from 'lucide-react';
-
-const LipstickManager = () => {
-  const [lipsticks, setLipsticks] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterCategory, setFilterCategory] = useState('all');
-  const [filterFinish, setFilterFinish] = useState('all');
-  const [sortBy, setSortBy] = useState('color');
-
-  // LocalStorage에서 데이터 로드
-  useEffect(() => {
-    const saved = localStorage.getItem('lipstickCollection');
-    if (saved) {
-      setLipsticks(JSON.parse(saved));
-    }
-  }, []);
-
-  // 데이터 변경시 LocalStorage에 저장
-  useEffect(() => {
-    if (lipsticks.length > 0) {
-      localStorage.setItem('lipstickCollection', JSON.stringify(lipsticks));
-    }
-  }, [lipsticks]);
-
-  // CSV 파일 업로드
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target.result;
-      const lines = text.split('\n').filter(line => line.trim());
-      
-      const newLipsticks = lines.slice(1).map((line, index) => {
-        const [brand, name, colorNum, colorCode, category, finish] = line.split(',').map(s => s.trim());
-        return {
-          id: Date.now() + index,
-          brand: brand || '',
-          name: name || '',
-          colorNum: colorNum || '',
-          colorCode: colorCode || '#000000',
-          category: category || '기타',
-          finish: finish || '기타'
-        };
-      }).filter(item => item.brand);
-
-      setLipsticks(prev => [...prev, ...newLipsticks]);
-    };
-    reader.readAsText(file);
-  };
-
-  // CSV 다운로드
-  const downloadCSV = () => {
-    const header = '브랜드,제품명,컬러번호,색상코드,카테고리,피니쉬\n';
-    const rows = lipsticks.map(lip => 
-      `${lip.brand},${lip.name},${lip.colorNum},${lip.colorCode},${lip.category},${lip.finish}`
-    ).join('\n');
-    
-    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `립스틱컬렉션_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-  };
-
-  // 샘플 데이터 추가
-  const addSampleData = () => {
-    const samples = [
-      { id: Date.now() + 1, brand: '라카', name: '프루티 글램 틴트', colorNum: '115 엔비', colorCode: '#a0152a', category: '틴트', finish: '글로우' },
-      { id: Date.now() + 2, brand: '롬앤', name: '쥬시래스팅틴트', colorNum: '06 피그베리', colorCode: '#D4847C', category: '틴트', finish: '매트' },
-      { id: Date.now() + 3, brand: '클리오', name: '매드 매트 립', colorNum: '09 누드인', colorCode: '#C97B63', category: '립스틱', finish: '매트' },
-      { id: Date.now() + 4, brand: '에뛰드', name: '픽싱틴트', colorNum: '03 레드쇼', colorCode: '#DC143C', category: '틴트', finish: '새미매트' },
-      { id: Date.now() + 5, brand: '페리페라', name: '잉크 더 벨벳', colorNum: '08 코랄리스트', colorCode: '#FF6B6B', category: '틴트', finish: '벨벳' },
-    ];
-    setLipsticks(prev => [...prev, ...samples]);
-  };
-
-  // 립스틱 삭제
-  const deleteLipstick = (id) => {
-    setLipsticks(prev => prev.filter(lip => lip.id !== id));
-  };
-
-  // 전체 삭제
-  const deleteAll = () => {
-    if (window.confirm('정말 모든 립스틱을 삭제하시겠어요?')) {
-      setLipsticks([]);
-      localStorage.removeItem('lipstickCollection');
-    }
-  };
-
-  // 필터링 & 검색
-  const filteredLipsticks = lipsticks.filter(lip => {
-    const matchSearch = lip.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       lip.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       lip.colorNum.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchCategory = filterCategory === 'all' || lip.category === filterCategory;
-    const matchFinish = filterFinish === 'all' || lip.finish === filterFinish;
-    return matchSearch && matchCategory && matchFinish;
-  });
-
-  // 정렬
-  const sortedLipsticks = [...filteredLipsticks].sort((a, b) => {
-    if (sortBy === 'color') {
-      return a.colorCode.localeCompare(b.colorCode);
-    } else if (sortBy === 'brand') {
-      return a.brand.localeCompare(b.brand);
-    }
-    return 0;
-  });
-
-  // 카테고리 & 피니쉬 목록 추출
-  const categories = ['all', ...new Set(lipsticks.map(l => l.category))];
-  const finishes = ['all', ...new Set(lipsticks.map(l => l.finish))];
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-red-50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* 헤더 */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-pink-600 to-red-600 bg-clip-text text-transparent mb-2">
-            💄 하늘 아래 같은 색조 없다!
-          </h1>
-          <p className="text-gray-600 text-lg">있는 색 그만 사기 프로젝트</p>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>하늘 아래 같은 색조 없다!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #fce7f3 0%, #ffe4e6 50%, #fef2f2 100%); }
+        .gradient-text { 
+            background: linear-gradient(90deg, #db2777 0%, #dc2626 100%); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            background-clip: text; 
+        }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .btn { transition: all 0.3s ease; }
+        .btn:hover { transform: translateY(-2px); }
+        .overlay-gradient { background: linear-gradient(to bottom right, rgba(255,255,255,0.2), transparent); }
+        .group:hover .group-hover-opacity { opacity: 1; }
+        .group-hover-opacity { opacity: 0; }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+    <div class="max-w-7xl mx-auto p-4 md:p-8">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold gradient-text mb-2">하늘 아래 같은 색조 없다!</h1>
+            <p class="text-gray-600 text-lg">있는 색 그만 사기 프로젝트</p>
         </div>
 
-        {/* 컨트롤 패널 */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* CSV 업로드 */}
-            <label className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-xl cursor-pointer hover:from-pink-600 hover:to-rose-600 transition-all shadow-lg hover:shadow-xl">
-              <Upload size={20} />
-              <span className="font-semibold">CSV 업로드</span>
-              <input type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
-            </label>
-
-            {/* CSV 다운로드 */}
-            <button
-              onClick={downloadCSV}
-              disabled={lipsticks.length === 0}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Download size={20} />
-              <span className="font-semibold">백업 다운로드</span>
-            </button>
-
-            {/* 샘플 데이터 */}
-            <button
-              onClick={addSampleData}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg hover:shadow-xl"
-            >
-              <Plus size={20} />
-              <span className="font-semibold">샘플 추가</span>
-            </button>
-
-            {/* 전체 삭제 */}
-            <button
-              onClick={deleteAll}
-              disabled={lipsticks.length === 0}
-              className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Trash2 size={20} />
-              <span className="font-semibold">전체 삭제</span>
-            </button>
-          </div>
-
-          {/* 검색 & 필터 */}
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                placeholder="브랜드, 제품명, 컬러 검색..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border-2 border-pink-200 rounded-xl focus:border-pink-400 focus:outline-none"
-              />
+        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <label class="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-xl cursor-pointer hover:from-pink-600 hover:to-rose-600 btn shadow-lg font-semibold">
+                    CSV 업로드
+                    <input type="file" id="csvUpload" accept=".csv" class="hidden">
+                </label>
+                <button id="downloadBtn" class="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 btn shadow-lg font-semibold">
+                    백업 다운로드
+                </button>
+                <button id="sampleBtn" class="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:from-amber-600 hover:to-orange-600 btn shadow-lg font-semibold">
+                    샘플 추가
+                </button>
+                <button id="deleteAllBtn" class="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl hover:from-gray-600 hover:to-gray-700 btn shadow-lg font-semibold">
+                    전체 삭제
+                </button>
             </div>
 
-            <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="px-4 py-2 border-2 border-pink-200 rounded-xl focus:border-pink-400 focus:outline-none"
-            >
-              <option value="all">모든 카테고리</option>
-              {categories.filter(c => c !== 'all').map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-
-            <select
-              value={filterFinish}
-              onChange={(e) => setFilterFinish(e.target.value)}
-              className="px-4 py-2 border-2 border-pink-200 rounded-xl focus:border-pink-400 focus:outline-none"
-            >
-              <option value="all">모든 피니쉬</option>
-              {finishes.filter(f => f !== 'all').map(fin => (
-                <option key={fin} value={fin}>{fin}</option>
-              ))}
-            </select>
-
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 border-2 border-pink-200 rounded-xl focus:border-pink-400 focus:outline-none"
-            >
-              <option value="color">색상순</option>
-              <option value="brand">브랜드순</option>
-            </select>
-          </div>
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+                <input type="text" id="searchInput" placeholder="브랜드, 제품명, 컬러 검색..." class="px-4 py-2 border-2 border-pink-200 rounded-xl focus:border-pink-400 focus:outline-none">
+                <select id="categoryFilter" class="px-4 py-2 border-2 border-pink-200 rounded-xl focus:border-pink-400 focus:outline-none">
+                    <option value="all">모든 카테고리</option>
+                </select>
+                <select id="finishFilter" class="px-4 py-2 border-2 border-pink-200 rounded-xl focus:border-pink-400 focus:outline-none">
+                    <option value="all">모든 피니쉬</option>
+                </select>
+                <select id="sortSelect" class="px-4 py-2 border-2 border-pink-200 rounded-xl focus:border-pink-400 focus:outline-none">
+                    <option value="color">색상순</option>
+                    <option value="brand">브랜드순</option>
+                </select>
+            </div>
         </div>
 
-        {/* 통계 */}
-        {lipsticks.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Palette size={24} />
-              내 컬렉션 통계
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-gradient-to-br from-pink-100 to-rose-100 rounded-xl p-4 text-center">
-                <div className="text-3xl font-bold text-pink-600">{lipsticks.length}</div>
-                <div className="text-sm text-gray-600 mt-1">전체 립스틱</div>
-              </div>
-              <div className="bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl p-4 text-center">
-                <div className="text-3xl font-bold text-purple-600">{categories.length - 1}</div>
-                <div className="text-sm text-gray-600 mt-1">카테고리</div>
-              </div>
-              <div className="bg-gradient-to-br from-amber-100 to-orange-100 rounded-xl p-4 text-center">
-                <div className="text-3xl font-bold text-orange-600">{finishes.length - 1}</div>
-                <div className="text-sm text-gray-600 mt-1">피니쉬 종류</div>
-              </div>
-              <div className="bg-gradient-to-br from-red-100 to-pink-100 rounded-xl p-4 text-center">
-                <div className="text-3xl font-bold text-red-600">{new Set(lipsticks.map(l => l.brand)).size}</div>
-                <div className="text-sm text-gray-600 mt-1">브랜드</div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 립스틱 그리드 */}
-        {sortedLipsticks.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
-            <div className="text-6xl mb-4">💄</div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-2">아직 립스틱이 없어요!</h3>
-            <p className="text-gray-600 mb-6">CSV 파일을 업로드하거나 샘플 데이터를 추가해보세요</p>
-            <div className="bg-gray-50 rounded-xl p-4 text-left max-w-md mx-auto">
-              <p className="font-semibold text-gray-700 mb-2">CSV 파일 형식:</p>
-              <code className="text-sm text-gray-600 block">
-                브랜드,제품명,컬러번호,색상코드,카테고리,피니쉬<br/>
-                라카,프루티 글램 틴트,115 엔비,#a0152a,틴트,글로우
-              </code>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {sortedLipsticks.map(lip => (
-              <div key={lip.id} className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all overflow-hidden group">
-                {/* 색상 스와치 */}
-                <div 
-                  className="h-32 relative"
-                  style={{ backgroundColor: lip.colorCode }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
-                  <button
-                    onClick={() => deleteLipstick(lip.id)}
-                    className="absolute top-2 right-2 bg-white/90 hover:bg-white text-red-500 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+        <div id="stats" class="bg-white rounded-2xl shadow-xl p-6 mb-6 hidden">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">내 컬렉션 통계</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-gradient-to-br from-pink-100 to-rose-100 rounded-xl p-4 text-center">
+                    <div id="totalCount" class="text-3xl font-bold text-pink-600">0</div>
+                    <div class="text-sm text-gray-600 mt-1">전체 립스틱</div>
                 </div>
-
-                {/* 정보 */}
-                <div className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="px-2 py-1 bg-pink-100 text-pink-700 text-xs rounded-full font-semibold">
-                      {lip.category}
-                    </span>
-                    <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full font-semibold">
-                      {lip.finish}
-                    </span>
-                  </div>
-                  <h3 className="font-bold text-gray-800 mb-1">{lip.brand}</h3>
-                  <p className="text-sm text-gray-600 mb-1">{lip.name}</p>
-                  <p className="text-sm text-gray-500">{lip.colorNum}</p>
-                  <p className="text-xs text-gray-400 mt-2 font-mono">{lip.colorCode}</p>
+                <div class="bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl p-4 text-center">
+                    <div id="categoryCount" class="text-3xl font-bold text-purple-600">0</div>
+                    <div class="text-sm text-gray-600 mt-1">카테고리</div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* 푸터 */}
-        <div className="mt-12 text-center text-gray-500 text-sm">
-          <p>💰 돈 낭비 방지 | 🌍 환경 보호 | 💄 스마트한 립덕후 되기</p>
-          <p className="mt-2">데이터는 브라우저에 안전하게 저장됩니다</p>
+                <div class="bg-gradient-to-br from-amber-100 to-orange-100 rounded-xl p-4 text-center">
+                    <div id="finishCount" class="text-3xl font-bold text-orange-600">0</div>
+                    <div class="text-sm text-gray-600 mt-1">피니쉬 종류</div>
+                </div>
+                <div class="bg-gradient-to-br from-red-100 to-pink-100 rounded-xl p-4 text-center">
+                    <div id="brandCount" class="text-3xl font-bold text-red-600">0</div>
+                    <div class="text-sm text-gray-600 mt-1">브랜드</div>
+                </div>
+            </div>
         </div>
-      </div>
+
+        <div id="emptyState" class="bg-white rounded-2xl shadow-xl p-12 text-center">
+            <div class="text-6xl mb-4">💄</div>
+            <h3 class="text-2xl font-bold text-gray-800 mb-2">아직 립스틱이 없어요!</h3>
+            <p class="text-gray-600 mb-6">CSV 파일을 업로드하거나 샘플 데이터를 추가해보세요</p>
+            <div class="bg-gray-50 rounded-xl p-4 text-left max-w-md mx-auto">
+                <p class="font-semibold text-gray-700 mb-2">CSV 파일 형식:</p>
+                <code class="text-sm text-gray-600 block">브랜드,제품명,컬러번호,색상코드,카테고리,피니쉬</code>
+                <code class="text-sm text-gray-600 block">라카,프루티 글램 틴트,115 엔비,#a0152a,틴트,글로우</code>
+            </div>
+        </div>
+
+        <div id="lipstickGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 hidden"></div>
+
+        <div class="mt-12 text-center text-gray-500 text-sm">
+            <p>돈 낭비 방지 | 환경 보호 | 스마트한 립덕후 되기</p>
+            <p class="mt-2">데이터는 브라우저에 안전하게 저장됩니다</p>
+        </div>
     </div>
-  );
-};
 
-export default LipstickManager;
+    <script>
+        var lipsticks = [];
+
+        function loadData() {
+            var saved = localStorage.getItem('lipstickCollection');
+            if (saved) {
+                try {
+                    lipsticks = JSON.parse(saved);
+                } catch (e) {
+                    lipsticks = [];
+                }
+            }
+            render();
+        }
+
+        function saveData() {
+            localStorage.setItem('lipstickCollection', JSON.stringify(lipsticks));
+        }
+
+        document.getElementById('csvUpload').addEventListener('change', function(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+
+            var reader = new FileReader();
+            reader.onload = function(event) {
+                var text = event.target.result;
+                var lines = text.split('\n');
+                var filteredLines = [];
+                
+                for (var i = 0; i < lines.length; i++) {
+                    if (lines[i].trim()) {
+                        filteredLines.push(lines[i]);
+                    }
+                }
+                
+                var newLipsticks = [];
+                for (var j = 1; j < filteredLines.length; j++) {
+                    var line = filteredLines[j];
+                    var parts = line.split(',');
+                    var trimmedParts = [];
+                    
+                    for (var k = 0; k < parts.length; k++) {
+                        trimmedParts.push(parts[k].trim());
+                    }
+                    
+                    if (trimmedParts[0]) {
+                        newLipsticks.push({
+                            id: Date.now() + j,
+                            brand: trimmedParts[0] || '',
+                            name: trimmedParts[1] || '',
+                            colorNum: trimmedParts[2] || '',
+                            colorCode: trimmedParts[3] || '#000000',
+                            category: trimmedParts[4] || '기타',
+                            finish: trimmedParts[5] || '기타'
+                        });
+                    }
+                }
+
+                lipsticks = lipsticks.concat(newLipsticks);
+                saveData();
+                render();
+                alert(newLipsticks.length + '개의 립스틱이 추가되었어요!');
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        });
+
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            if (lipsticks.length === 0) {
+                alert('저장된 립스틱이 없어요!');
+                return;
+            }
+
+            var header = '브랜드,제품명,컬러번호,색상코드,카테고리,피니쉬\n';
+            var rows = '';
+            
+            for (var i = 0; i < lipsticks.length; i++) {
+                var lip = lipsticks[i];
+                rows += lip.brand + ',' + lip.name + ',' + lip.colorNum + ',' + lip.colorCode + ',' + lip.category + ',' + lip.finish + '\n';
+            }
+            
+            var blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+            var link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            var date = new Date();
+            var year = date.getFullYear();
+            var month = date.getMonth() + 1;
+            var day = date.getDate();
+            var dateStr = year + '-' + month + '-' + day;
+            link.download = 'lipstick_collection_' + dateStr + '.csv';
+            link.click();
+        });
+
+        document.getElementById('sampleBtn').addEventListener('click', function() {
+            var samples = [
+                { id: Date.now() + 1, brand: '라카', name: '프루티 글램 틴트', colorNum: '115 엔비', colorCode: '#a0152a', category: '틴트', finish: '글로우' },
+                { id: Date.now() + 2, brand: '롬앤', name: '쥬시래스팅틴트', colorNum: '06 피그베리', colorCode: '#D4847C', category: '틴트', finish: '매트' },
+                { id: Date.now() + 3, brand: '클리오', name: '매드 매트 립', colorNum: '09 누드인', colorCode: '#C97B63', category: '립스틱', finish: '매트' },
+                { id: Date.now() + 4, brand: '에뛰드', name: '픽싱틴트', colorNum: '03 레드쇼', colorCode: '#DC143C', category: '틴트', finish: '새미매트' },
+                { id: Date.now() + 5, brand: '페리페라', name: '잉크 더 벨벳', colorNum: '08 코랄리스트', colorCode: '#FF6B6B', category: '틴트', finish: '벨벳' }
+            ];
+            lipsticks = lipsticks.concat(samples);
+            saveData();
+            render();
+            alert('샘플 데이터 5개가 추가되었어요!');
+        });
+
+        document.getElementById('deleteAllBtn').addEventListener('click', function() {
+            if (lipsticks.length === 0) {
+                alert('삭제할 립스틱이 없어요!');
+                return;
+            }
+            if (confirm('정말 모든 립스틱을 삭제하시겠어요?')) {
+                lipsticks = [];
+                localStorage.removeItem('lipstickCollection');
+                render();
+                alert('모든 데이터가 삭제되었어요!');
+            }
+        });
+
+        window.deleteLipstick = function(id) {
+            var newLipsticks = [];
+            for (var i = 0; i < lipsticks.length; i++) {
+                if (lipsticks[i].id !== id) {
+                    newLipsticks.push(lipsticks[i]);
+                }
+            }
+            lipsticks = newLipsticks;
+            saveData();
+            render();
+        };
+
+        function render() {
+            var searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            var categoryFilter = document.getElementById('categoryFilter').value;
+            var finishFilter = document.getElementById('finishFilter').value;
+            var sortBy = document.getElementById('sortSelect').value;
+
+            var filtered = [];
+            for (var i = 0; i < lipsticks.length; i++) {
+                var lip = lipsticks[i];
+                var brandLower = lip.brand.toLowerCase();
+                var nameLower = lip.name.toLowerCase();
+                var colorNumLower = lip.colorNum.toLowerCase();
+                
+                var matchSearch = brandLower.indexOf(searchTerm) !== -1 ||
+                                  nameLower.indexOf(searchTerm) !== -1 ||
+                                  colorNumLower.indexOf(searchTerm) !== -1;
+                var matchCategory = categoryFilter === 'all' || lip.category === categoryFilter;
+                var matchFinish = finishFilter === 'all' || lip.finish === finishFilter;
+                
+                if (matchSearch && matchCategory && matchFinish) {
+                    filtered.push(lip);
+                }
+            }
+
+            filtered.sort(function(a, b) {
+                if (sortBy === 'color') {
+                    return a.colorCode.localeCompare(b.colorCode);
+                } else if (sortBy === 'brand') {
+                    return a.brand.localeCompare(b.brand);
+                }
+                return 0;
+            });
+
+            var emptyState = document.getElementById('emptyState');
+            var lipstickGrid = document.getElementById('lipstickGrid');
+            var stats = document.getElementById('stats');
+
+            if (lipsticks.length === 0) {
+                emptyState.classList.remove('hidden');
+                lipstickGrid.classList.add('hidden');
+                stats.classList.add('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                lipstickGrid.classList.remove('hidden');
+                stats.classList.remove('hidden');
+
+                var categoriesArr = [];
+                var finishesArr = [];
+                var brandsArr = [];
+                
+                for (var i = 0; i < lipsticks.length; i++) {
+                    if (categoriesArr.indexOf(lipsticks[i].category) === -1) {
+                        categoriesArr.push(lipsticks[i].category);
+                    }
+                    if (finishesArr.indexOf(lipsticks[i].finish) === -1) {
+                        finishesArr.push(lipsticks[i].finish);
+                    }
+                    if (brandsArr.indexOf(lipsticks[i].brand) === -1) {
+                        brandsArr.push(lipsticks[i].brand);
+                    }
+                }
+
+                document.getElementById('totalCount').textContent = lipsticks.length;
+                document.getElementById('categoryCount').textContent = categoriesArr.length;
+                document.getElementById('finishCount').textContent = finishesArr.length;
+                document.getElementById('brandCount').textContent = brandsArr.length;
+
+                updateFilterOptions();
+
+                var html = '';
+                for (var j = 0; j < filtered.length; j++) {
+                    var lip = filtered[j];
+                    html += '<div class="bg-white rounded-2xl shadow-lg card-hover overflow-hidden group">';
+                    html += '<div class="h-32 relative" style="background-color: ' + lip.colorCode + '">';
+                    html += '<div class="absolute inset-0 overlay-gradient"></div>';
+                    html += '<button onclick="deleteLipstick(' + lip.id + ')" class="absolute top-2 right-2 text-red-500 rounded-full p-2 group-hover-opacity transition-opacity shadow-lg" style="background-color: rgba(255,255,255,0.9);">삭제</button>';
+                    html += '</div>';
+                    html += '<div class="p-4">';
+                    html += '<div class="flex items-center gap-2 mb-2">';
+                    html += '<span class="px-2 py-1 bg-pink-100 text-pink-700 text-xs rounded-full font-semibold">' + lip.category + '</span>';
+                    html += '<span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full font-semibold">' + lip.finish + '</span>';
+                    html += '</div>';
+                    html += '<h3 class="font-bold text-gray-800 mb-1">' + lip.brand + '</h3>';
+                    html += '<p class="text-sm text-gray-600 mb-1">' + lip.name + '</p>';
+                    html += '<p class="text-sm text-gray-500">' + lip.colorNum + '</p>';
+                    html += '<p class="text-xs text-gray-400 mt-2 font-mono">' + lip.colorCode + '</p>';
+                    html += '</div>';
+                    html += '</div>';
+                }
+                lipstickGrid.innerHTML = html;
+            }
+        }
+
+        function updateFilterOptions() {
+            var categoriesArr = [];
+            var finishesArr = [];
+            
+            for (var i = 0; i < lipsticks.length; i++) {
+                if (categoriesArr.indexOf(lipsticks[i].category) === -1) {
+                    categoriesArr.push(lipsticks[i].category);
+                }
+                if (finishesArr.indexOf(lipsticks[i].finish) === -1) {
+                    finishesArr.push(lipsticks[i].finish);
+                }
+            }
+
+            var categoryFilter = document.getElementById('categoryFilter');
+            var finishFilter = document.getElementById('finishFilter');
+
+            var currentCategory = categoryFilter.value;
+            var currentFinish = finishFilter.value;
+
+            var catHtml = '<option value="all">모든 카테고리</option>';
+            for (var j = 0; j < categoriesArr.length; j++) {
+                catHtml += '<option value="' + categoriesArr[j] + '">' + categoriesArr[j] + '</option>';
+            }
+            categoryFilter.innerHTML = catHtml;
+            
+            var finHtml = '<option value="all">모든 피니쉬</option>';
+            for (var k = 0; k < finishesArr.length; k++) {
+                finHtml += '<option value="' + finishesArr[k] + '">' + finishesArr[k] + '</option>';
+            }
+            finishFilter.innerHTML = finHtml;
+
+            categoryFilter.value = currentCategory;
+            finishFilter.value = currentFinish;
+        }
+
+        document.getElementById('searchInput').addEventListener('input', render);
+        document.getElementById('categoryFilter').addEventListener('change', render);
+        document.getElementById('finishFilter').addEventListener('change', render);
+        document.getElementById('sortSelect').addEventListener('change', render);
+
+        loadData();
+    </script>
+</body>
+</html>
