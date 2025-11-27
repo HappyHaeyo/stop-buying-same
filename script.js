@@ -275,3 +275,82 @@ document.getElementById('resetBtn').addEventListener('click', () => {
         updateAnalysis();
     }
 });
+// --- 📂 데이터 백업 및 복구 (CSV) ---
+
+// 1. 백업 다운로드 (내보내기)
+document.getElementById('downloadBtn').addEventListener('click', () => {
+    if (lipsticks.length === 0) {
+        alert('저장할 데이터가 없어요! 😅');
+        return;
+    }
+    
+    // CSV 헤더: 브랜드, 제품명, 컬러명, 퍼스널컬러, 헥사코드
+    let csvContent = "브랜드,제품명,컬러명,퍼스널컬러,색상코드\n";
+    
+    lipsticks.forEach(lip => {
+        // 쉼표(,)가 포함된 텍스트 처리 등을 위해 따옴표 처리 같은 게 정석이지만, 간단하게 구현
+        const row = [
+            lip.brand,
+            lip.name,
+            lip.colorNum,
+            lip.personalColor,
+            lip.colorCode
+        ].join(",");
+        csvContent += row + "\n";
+    });
+
+    // 다운로드 링크 생성
+    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' }); // 한글 깨짐 방지(BOM)
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    
+    const date = new Date().toISOString().slice(0,10).replace(/-/g,"");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `MyLipstick_Backup_${date}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+});
+
+// 2. CSV 업로드 (가져오기)
+document.getElementById('csvUpload').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        const text = event.target.result;
+        const lines = text.split('\n');
+        
+        let addedCount = 0;
+
+        // 첫 줄(헤더) 건너뛰고 1부터 시작
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+
+            const parts = line.split(',');
+            // 최소한 브랜드, 제품명은 있어야 함
+            if (parts.length >= 2) {
+                const newItem = {
+                    id: Date.now() + i, // 고유 ID 생성
+                    brand: parts[0]?.trim() || 'Unknown',
+                    name: parts[1]?.trim() || 'Unknown',
+                    colorNum: parts[2]?.trim() || '',
+                    personalColor: parts[3]?.trim() || '잘 모름', // 없으면 기본값
+                    colorCode: parts[4]?.trim() || '#000000',
+                    date: new Date().toISOString()
+                };
+                lipsticks.push(newItem);
+                addedCount++;
+            }
+        }
+
+        saveData();
+        render();
+        updateAnalysis();
+        alert(`${addedCount}개의 립스틱을 성공적으로 불러왔어요! 💄`);
+        e.target.value = ''; // 같은 파일 다시 선택 가능하게 초기화
+    };
+    reader.readAsText(file);
+});
