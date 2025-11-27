@@ -1,7 +1,7 @@
 // 전역 변수 설정
 let lipsticks = [];
 let myChart = null;
-const colorThief = new ColorThief(); 
+const colorThief = new ColorThief();
 
 // --- HTML이 모두 로딩된 후 실행 (안전장치) ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -12,13 +12,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const imageInput = document.getElementById('imageInput');
     if (imageInput) {
         const imagePreview = document.getElementById('imagePreview');
-        
-        imageInput.addEventListener('change', function(e) {
+
+        imageInput.addEventListener('change', function (e) {
             const file = e.target.files[0];
             if (!file) return;
 
             const reader = new FileReader();
-            reader.onload = function(event) {
+            reader.onload = function (event) {
                 if (imagePreview) {
                     imagePreview.src = event.target.result;
                     imagePreview.classList.remove('hidden');
@@ -26,20 +26,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const img = new Image();
                 img.src = event.target.result;
-                img.onload = function() {
+                img.onload = function () {
                     try {
                         const color = colorThief.getColor(img);
                         const hex = rgbToHex(color[0], color[1], color[2]);
-                        
+
                         const inputHex = document.getElementById('inputHex');
                         const hexText = document.getElementById('hexValueText');
-                        
+
                         if (inputHex) inputHex.value = hex;
                         if (hexText) hexText.textContent = `추출된 색상: ${hex}`;
-                        
+
                         const suggestedTone = suggestTone(color[0], color[1], color[2]);
                         const selectBox = document.getElementById('inputPersonalColor');
-                        
+
                         if (selectBox) {
                             selectBox.value = suggestedTone;
                             selectBox.classList.add('bg-rose-100');
@@ -82,13 +82,13 @@ document.addEventListener('DOMContentLoaded', () => {
             saveData();
             render();
             updateAnalysis();
-            
+
             // 폼 초기화
-            if(document.getElementById('inputBrand')) document.getElementById('inputBrand').value = '';
-            if(document.getElementById('inputName')) document.getElementById('inputName').value = '';
-            if(document.getElementById('inputColorName')) document.getElementById('inputColorName').value = '';
-            if(document.getElementById('imagePreview')) document.getElementById('imagePreview').classList.add('hidden');
-            if(document.getElementById('inputPersonalColor')) document.getElementById('inputPersonalColor').value = '';
+            if (document.getElementById('inputBrand')) document.getElementById('inputBrand').value = '';
+            if (document.getElementById('inputName')) document.getElementById('inputName').value = '';
+            if (document.getElementById('inputColorName')) document.getElementById('inputColorName').value = '';
+            if (document.getElementById('imagePreview')) document.getElementById('imagePreview').classList.add('hidden');
+            if (document.getElementById('inputPersonalColor')) document.getElementById('inputPersonalColor').value = '';
         });
     }
 
@@ -106,7 +106,14 @@ document.addEventListener('DOMContentLoaded', () => {
             saveData();
             render();
             updateAnalysis();
-            alert('샘플 데이터 4개가 추가되었습니다! 💄');
+
+            // 버튼 텍스트 변경으로 피드백
+            const originalText = sampleBtn.innerHTML;
+            sampleBtn.innerHTML = '<div class="p-2 bg-green-50 rounded-full"><i data-lucide="check" class="w-4 h-4 text-green-500"></i></div><span class="text-xs font-semibold text-green-600">추가됨!</span>';
+            setTimeout(() => {
+                sampleBtn.innerHTML = originalText;
+                lucide.createIcons();
+            }, 1500);
         });
     }
 
@@ -114,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetBtn = document.getElementById('resetBtn');
     if (resetBtn) {
         resetBtn.addEventListener('click', () => {
-            if(confirm('모든 데이터를 삭제하시겠습니까?')) {
+            if (confirm('모든 데이터를 삭제하시겠습니까?')) {
                 lipsticks = [];
                 saveData();
                 render();
@@ -131,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('저장할 데이터가 없어요! 😅');
                 return;
             }
-            
+
             let csvContent = "브랜드,제품명,컬러명,퍼스널컬러,색상코드\n";
             lipsticks.forEach(lip => {
                 const row = [
@@ -147,8 +154,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
-            
-            const date = new Date().toISOString().slice(0,10).replace(/-/g,"");
+
+            const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
             link.setAttribute("href", url);
             link.setAttribute("download", `MyLipstick_Backup_${date}.csv`);
             document.body.appendChild(link);
@@ -168,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
             reader.onload = (event) => {
                 const text = event.target.result;
                 const lines = text.split('\n');
-                
+
                 let addedCount = 0;
 
                 for (let i = 1; i < lines.length; i++) {
@@ -263,7 +270,7 @@ function updateAnalysis() {
     if (!section) return;
 
     const validData = lipsticks.filter(l => l.personalColor !== '잘 모름');
-    
+
     if (validData.length === 0) {
         section.classList.add('hidden');
         return;
@@ -294,7 +301,7 @@ function updateAnalysis() {
                     label: '내 컬렉션',
                     data: Object.values(counts),
                     backgroundColor: [
-                        '#FFB7B2', '#FF6961', '#C7CEEA', '#B5B9FF', 
+                        '#FFB7B2', '#FF6961', '#C7CEEA', '#B5B9FF',
                         '#E2C2B3', '#8D5B4C', '#FF52A2', '#800020'
                     ],
                     borderRadius: 6,
@@ -311,12 +318,12 @@ function updateAnalysis() {
 
     const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
     const max = sorted[0];
-    
+
     let text = `💄 분석 결과, <strong class="text-rose-600">${max[0]}</strong> 계열이 ${max[1]}개로 가장 많아요!`;
     if (validData.length < lipsticks.length) {
         text += `<br><span class="text-xs text-gray-400">(잘 모르는 톤 ${lipsticks.length - validData.length}개 제외)</span>`;
     }
-    
+
     const analysisText = document.getElementById('analysisText');
     if (analysisText) analysisText.innerHTML = text;
 }
@@ -356,8 +363,8 @@ function render(filter = 'all') {
     lucide.createIcons();
 }
 
-window.deleteItem = function(id) {
-    if(confirm('삭제하시겠습니까?')) {
+window.deleteItem = function (id) {
+    if (confirm('삭제하시겠습니까?')) {
         lipsticks = lipsticks.filter(l => l.id !== id);
         saveData();
         render();
@@ -365,12 +372,12 @@ window.deleteItem = function(id) {
     }
 }
 
-window.filterBy = function(category) {
+window.filterBy = function (category) {
     document.querySelectorAll('.filter-chip').forEach(btn => btn.classList.remove('active'));
-    
+
     let idMap = { 'all': 'filter-all', '봄': 'filter-spring', '여름': 'filter-summer', '가을': 'filter-autumn', '겨울': 'filter-winter' };
     const targetBtn = document.getElementById(idMap[category]);
-    if(targetBtn) targetBtn.classList.add('active');
-    
+    if (targetBtn) targetBtn.classList.add('active');
+
     render(category);
 }
