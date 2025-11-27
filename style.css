@@ -1,0 +1,60 @@
+/* 기본 폰트 및 배경 */
+body {
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    background-color: #FDFBF7;
+}
+
+/* 스크롤바 커스텀 */
+::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* 헤더 글래스모피즘 효과 */
+.glass-header {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+/* 입력 필드 스타일 */
+.input-field {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    font-size: 13px;
+    outline: none;
+    transition: all 0.2s;
+}
+.input-field:focus {
+    border-color: #f43f5e;
+    background-color: #fff1f2;
+}
+
+/* 필터 칩 버튼 */
+.filter-chip {
+    padding: 6px 14px;
+    border-radius: 99px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    color: #78716c;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: all 0.2s;
+}
+.filter-chip.active {
+    background: #1c1917;
+    color: white;
+    border-color: #1c1917;
+}
+
+/* 애니메이션 */
+.fade-in { animation: fadeIn 0.4s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* 컬러칩 */
+.color-swatch {
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    border: 2px solid white;
+}
