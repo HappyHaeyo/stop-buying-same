@@ -101,6 +101,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 { id: Date.now() + 2, brand: '맥', name: '루비우', colorNum: 'Retro Matte', personalColor: '겨울 쿨 브라이트', colorCode: '#D31C43' },
                 { id: Date.now() + 3, brand: '3CE', name: '벨벳 립 틴트', colorNum: '다포딜', personalColor: '가을 웜 딥', colorCode: '#B25049' },
                 { id: Date.now() + 4, brand: '페리페라', name: '잉크무드', colorNum: '03호', personalColor: '가을 웜 뮤트', colorCode: '#BC7872' },
+                { id: Date.now() + 5, brand: '에뛰드', name: '픽싱틴트', colorNum: '05 미드나잇', colorCode: '#68001D', personalColor: '겨울 쿨 딥' },
+                { id: Date.now() + 6, brand: '라카', name: '프루티글램', colorNum: '103 험밍', colorCode: '#FFDAC1', personalColor: '봄 웜 라이트' }
             ];
             lipsticks = [...lipsticks, ...samples];
             saveData();
@@ -265,7 +267,7 @@ function suggestTone(r, g, b) {
     }
 }
 
-// 💄 여기서부터가 차트 디자인을 예쁘게 바꿔주는 부분입니다!
+// 💄 차트 디자인 수정: 8가지 톤 색상 확실하게 분리!
 function updateAnalysis() {
     const section = document.getElementById('analysisSection');
     if (!section) return;
@@ -294,18 +296,17 @@ function updateAnalysis() {
         const ctx = canvas.getContext('2d');
         if (myChart) myChart.destroy();
 
-        // 🌈 그라데이션 만들기 (봄, 여름, 가을, 겨울)
-        const gradientSpring = ctx.createLinearGradient(0, 0, 0, 400);
-        gradientSpring.addColorStop(0, '#FFB7B2'); gradientSpring.addColorStop(1, '#FFDAC1');
-
-        const gradientSummer = ctx.createLinearGradient(0, 0, 0, 400);
-        gradientSummer.addColorStop(0, '#B5B9FF'); gradientSummer.addColorStop(1, '#C7CEEA');
-        
-        const gradientAutumn = ctx.createLinearGradient(0, 0, 0, 400);
-        gradientAutumn.addColorStop(0, '#E2C2B3'); gradientAutumn.addColorStop(1, '#BF9270');
-
-        const gradientWinter = ctx.createLinearGradient(0, 0, 0, 400);
-        gradientWinter.addColorStop(0, '#FF52A2'); gradientWinter.addColorStop(1, '#9A0F39');
+        // 🌈 8가지 퍼스널 컬러 고유 색상 지정 (그라데이션 X, 선명한 단색)
+        const toneColors = [
+            '#FFDAC1', // 봄라 (살구)
+            '#FF6F61', // 봄브 (코랄)
+            '#C7CEEA', // 여라 (라벤더)
+            '#A68DAD', // 여뮤 (회보라) - 이제 여라랑 다름!
+            '#DDBEA9', // 갈뮤 (베이지)
+            '#8D5B4C', // 갈딥 (벽돌) - 이제 갈뮤랑 다름!
+            '#FF52A2', // 겨브 (핫핑크)
+            '#68001D'  // 겨딥 (와인) - 이제 겨브랑 다름!
+        ];
 
         myChart = new Chart(ctx, {
             type: 'bar',
@@ -314,14 +315,9 @@ function updateAnalysis() {
                 datasets: [{
                     label: '내 컬렉션',
                     data: Object.values(counts),
-                    backgroundColor: [
-                        gradientSpring, gradientSpring,
-                        gradientSummer, gradientSummer,
-                        gradientAutumn, gradientAutumn,
-                        gradientWinter, gradientWinter
-                    ],
-                    borderRadius: 50, // 🟡 막대를 완전히 둥글게 (알약 모양)
-                    barThickness: 18, // 🟡 막대 두께를 얇게 (날씬하게)
+                    backgroundColor: toneColors, // 8색 적용
+                    borderRadius: 50,
+                    barThickness: 20,
                     borderSkipped: false,
                 }]
             },
@@ -331,11 +327,11 @@ function updateAnalysis() {
                 plugins: { legend: { display: false } },
                 scales: { 
                     x: { 
-                        grid: { display: false }, // 🟡 세로 격자선 삭제
+                        grid: { display: false }, 
                         ticks: { font: { family: 'Pretendard', size: 11 }, color: '#9ca3af' }
                     }, 
                     y: { 
-                        display: false, // 🟡 y축 숫자와 격자선 완전 삭제
+                        display: false,
                         grid: { display: false } 
                     } 
                 },
@@ -350,7 +346,6 @@ function updateAnalysis() {
     const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
     const max = sorted[0];
 
-    // 💬 분석 멘트 디자인 개선 (가운데 정렬 + 아이콘)
     let text = `<div class="flex flex-col items-center justify-center text-center">
         <span class="text-sm text-gray-400 mb-1">가장 많은 퍼스널 컬러는?</span>
         <div class="text-xl text-rose-600 font-bold flex items-center gap-2">
