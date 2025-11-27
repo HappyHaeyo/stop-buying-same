@@ -1,60 +1,88 @@
-/* 기본 폰트 및 배경 */
+/* 폰트: 프리텐다드 */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css");
+
 body {
-    font-family: 'Pretendard', -apple-system, sans-serif;
-    background-color: #FDFBF7;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%); /* 은은한 그라데이션 배경 */
+    color: #4b5563;
 }
 
-/* 스크롤바 커스텀 */
+/* 스크롤바 숨김 */
 ::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* 헤더 글래스모피즘 효과 */
+/* 헤더: 유리 질감 (Glassmorphism) */
 .glass-header {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(0,0,0,0.05);
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-/* 입력 필드 스타일 */
+/* 카드 디자인: 공중에 뜬 듯한 느낌 */
+.bg-white {
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05); /* 부드러운 그림자 */
+}
+
+/* 입력 필드: 테두리 없애고 푹신하게 */
 .input-field {
     width: 100%;
-    padding: 10px 12px;
-    border-radius: 12px;
-    border: 1px solid #e5e7eb;
-    font-size: 13px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background-color: #f3f4f6; /* 연한 회색 배경 */
+    border: 1px solid transparent;
+    font-size: 14px;
     outline: none;
-    transition: all 0.2s;
-}
-.input-field:focus {
-    border-color: #f43f5e;
-    background-color: #fff1f2;
+    transition: all 0.3s ease;
+    color: #374151;
 }
 
-/* 필터 칩 버튼 */
+.input-field:focus {
+    background-color: white;
+    border-color: #fbcfe8; /* 포커스 시 연한 핑크 */
+    box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.05);
+}
+
+.input-field::placeholder {
+    color: #9ca3af;
+}
+
+/* 필터 칩: 알약 모양 */
 .filter-chip {
-    padding: 6px 14px;
-    border-radius: 99px;
+    padding: 8px 16px;
+    border-radius: 100px;
     background: white;
-    border: 1px solid #e5e7eb;
-    color: #78716c;
+    border: 1px solid #f3f4f6;
+    color: #6b7280;
     font-size: 12px;
     font-weight: 600;
     white-space: nowrap;
     transition: all 0.2s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
 }
+
 .filter-chip.active {
-    background: #1c1917;
+    background: #111827;
     color: white;
-    border-color: #1c1917;
+    border-color: #111827;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* 컬러칩: 고급스러운 테두리 */
+.color-swatch {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 3px solid white;
 }
 
 /* 애니메이션 */
-.fade-in { animation: fadeIn 0.4s ease-out; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-/* 컬러칩 */
-.color-swatch {
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
-    border: 2px solid white;
+/* 카메라 업로드 영역 예쁘게 */
+#imagePreview {
+    border-radius: 16px;
 }
