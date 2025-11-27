@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 3. ✨ 샘플 데이터 버튼 (여기가 문제였음)
+    // 3. ✨ 샘플 데이터 버튼
     const sampleBtn = document.getElementById('sampleBtn');
     if (sampleBtn) {
         sampleBtn.addEventListener('click', () => {
@@ -265,6 +265,7 @@ function suggestTone(r, g, b) {
     }
 }
 
+// 💄 여기서부터가 차트 디자인을 예쁘게 바꿔주는 부분입니다!
 function updateAnalysis() {
     const section = document.getElementById('analysisSection');
     if (!section) return;
@@ -293,6 +294,19 @@ function updateAnalysis() {
         const ctx = canvas.getContext('2d');
         if (myChart) myChart.destroy();
 
+        // 🌈 그라데이션 만들기 (봄, 여름, 가을, 겨울)
+        const gradientSpring = ctx.createLinearGradient(0, 0, 0, 400);
+        gradientSpring.addColorStop(0, '#FFB7B2'); gradientSpring.addColorStop(1, '#FFDAC1');
+
+        const gradientSummer = ctx.createLinearGradient(0, 0, 0, 400);
+        gradientSummer.addColorStop(0, '#B5B9FF'); gradientSummer.addColorStop(1, '#C7CEEA');
+        
+        const gradientAutumn = ctx.createLinearGradient(0, 0, 0, 400);
+        gradientAutumn.addColorStop(0, '#E2C2B3'); gradientAutumn.addColorStop(1, '#BF9270');
+
+        const gradientWinter = ctx.createLinearGradient(0, 0, 0, 400);
+        gradientWinter.addColorStop(0, '#FF52A2'); gradientWinter.addColorStop(1, '#9A0F39');
+
         myChart = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -301,17 +315,34 @@ function updateAnalysis() {
                     label: '내 컬렉션',
                     data: Object.values(counts),
                     backgroundColor: [
-                        '#FFB7B2', '#FF6961', '#C7CEEA', '#B5B9FF',
-                        '#E2C2B3', '#8D5B4C', '#FF52A2', '#800020'
+                        gradientSpring, gradientSpring,
+                        gradientSummer, gradientSummer,
+                        gradientAutumn, gradientAutumn,
+                        gradientWinter, gradientWinter
                     ],
-                    borderRadius: 6,
+                    borderRadius: 50, // 🟡 막대를 완전히 둥글게 (알약 모양)
+                    barThickness: 18, // 🟡 막대 두께를 얇게 (날씬하게)
+                    borderSkipped: false,
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
-                scales: { x: { grid: { display: false } }, y: { display: false } }
+                scales: { 
+                    x: { 
+                        grid: { display: false }, // 🟡 세로 격자선 삭제
+                        ticks: { font: { family: 'Pretendard', size: 11 }, color: '#9ca3af' }
+                    }, 
+                    y: { 
+                        display: false, // 🟡 y축 숫자와 격자선 완전 삭제
+                        grid: { display: false } 
+                    } 
+                },
+                animation: {
+                    duration: 1500,
+                    easing: 'easeOutQuart'
+                }
             }
         });
     }
@@ -319,9 +350,16 @@ function updateAnalysis() {
     const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
     const max = sorted[0];
 
-    let text = `💄 분석 결과, <strong class="text-rose-600">${max[0]}</strong> 계열이 ${max[1]}개로 가장 많아요!`;
+    // 💬 분석 멘트 디자인 개선 (가운데 정렬 + 아이콘)
+    let text = `<div class="flex flex-col items-center justify-center text-center">
+        <span class="text-sm text-gray-400 mb-1">가장 많은 퍼스널 컬러는?</span>
+        <div class="text-xl text-rose-600 font-bold flex items-center gap-2">
+            ✨ ${max[0]} <span class="bg-rose-100 text-rose-600 text-xs px-2 py-1 rounded-full">${max[1]}개</span>
+        </div>
+    </div>`;
+    
     if (validData.length < lipsticks.length) {
-        text += `<br><span class="text-xs text-gray-400">(잘 모르는 톤 ${lipsticks.length - validData.length}개 제외)</span>`;
+        text += `<div class="text-center mt-3 text-[10px] text-gray-300">(*분석 불가 ${lipsticks.length - validData.length}개 제외)</div>`;
     }
 
     const analysisText = document.getElementById('analysisText');
