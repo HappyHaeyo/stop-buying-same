@@ -1,11 +1,209 @@
-lucide.createIcons();
+// 전역 변수 설정
 let lipsticks = [];
 let myChart = null;
 const colorThief = new ColorThief(); 
 
-loadData();
+// --- HTML이 모두 로딩된 후 실행 (안전장치) ---
+document.addEventListener('DOMContentLoaded', () => {
+    lucide.createIcons(); // 아이콘 초기화
+    loadData(); // 데이터 불러오기
 
-// --- 데이터 로드 ---
+    // 1. 📸 이미지 업로드 및 색상 추출
+    const imageInput = document.getElementById('imageInput');
+    if (imageInput) {
+        const imagePreview = document.getElementById('imagePreview');
+        
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                if (imagePreview) {
+                    imagePreview.src = event.target.result;
+                    imagePreview.classList.remove('hidden');
+                }
+
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = function() {
+                    try {
+                        const color = colorThief.getColor(img);
+                        const hex = rgbToHex(color[0], color[1], color[2]);
+                        
+                        const inputHex = document.getElementById('inputHex');
+                        const hexText = document.getElementById('hexValueText');
+                        
+                        if (inputHex) inputHex.value = hex;
+                        if (hexText) hexText.textContent = `추출된 색상: ${hex}`;
+                        
+                        const suggestedTone = suggestTone(color[0], color[1], color[2]);
+                        const selectBox = document.getElementById('inputPersonalColor');
+                        
+                        if (selectBox) {
+                            selectBox.value = suggestedTone;
+                            selectBox.classList.add('bg-rose-100');
+                            setTimeout(() => selectBox.classList.remove('bg-rose-100'), 1000);
+                        }
+
+                    } catch (err) {
+                        console.error("색상 추출 실패", err);
+                    }
+                };
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // 2. 등록 버튼
+    const addBtn = document.getElementById('addBtn');
+    if (addBtn) {
+        addBtn.addEventListener('click', () => {
+            const brand = document.getElementById('inputBrand')?.value;
+            const name = document.getElementById('inputName')?.value;
+            const colorName = document.getElementById('inputColorName')?.value;
+            const pColor = document.getElementById('inputPersonalColor')?.value;
+            const hex = document.getElementById('inputHex')?.value;
+
+            if (!brand && !name) { alert('브랜드나 제품명을 입력해주세요!'); return; }
+            if (!pColor) { alert('퍼스널 컬러를 선택해주세요!'); return; }
+
+            const newItem = {
+                id: Date.now(),
+                brand: brand || '브랜드 없음',
+                name: name || '제품명 없음',
+                colorNum: colorName || '',
+                personalColor: pColor,
+                colorCode: hex || '#000000',
+                date: new Date().toISOString()
+            };
+
+            lipsticks.push(newItem);
+            saveData();
+            render();
+            updateAnalysis();
+            
+            // 폼 초기화
+            if(document.getElementById('inputBrand')) document.getElementById('inputBrand').value = '';
+            if(document.getElementById('inputName')) document.getElementById('inputName').value = '';
+            if(document.getElementById('inputColorName')) document.getElementById('inputColorName').value = '';
+            if(document.getElementById('imagePreview')) document.getElementById('imagePreview').classList.add('hidden');
+            if(document.getElementById('inputPersonalColor')) document.getElementById('inputPersonalColor').value = '';
+        });
+    }
+
+    // 3. ✨ 샘플 데이터 버튼 (여기가 문제였음)
+    const sampleBtn = document.getElementById('sampleBtn');
+    if (sampleBtn) {
+        sampleBtn.addEventListener('click', () => {
+            const samples = [
+                { id: Date.now() + 1, brand: '롬앤', name: '쥬시래스팅', colorNum: '피그베리', personalColor: '여름 쿨 뮤트', colorCode: '#C85A65' },
+                { id: Date.now() + 2, brand: '맥', name: '루비우', colorNum: 'Retro Matte', personalColor: '겨울 쿨 브라이트', colorCode: '#D31C43' },
+                { id: Date.now() + 3, brand: '3CE', name: '벨벳 립 틴트', colorNum: '다포딜', personalColor: '가을 웜 딥', colorCode: '#B25049' },
+                { id: Date.now() + 4, brand: '페리페라', name: '잉크무드', colorNum: '03호', personalColor: '가을 웜 뮤트', colorCode: '#BC7872' },
+            ];
+            lipsticks = [...lipsticks, ...samples];
+            saveData();
+            render();
+            updateAnalysis();
+            alert('샘플 데이터 4개가 추가되었습니다! 💄');
+        });
+    }
+
+    // 4. 초기화 버튼
+    const resetBtn = document.getElementById('resetBtn');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            if(confirm('모든 데이터를 삭제하시겠습니까?')) {
+                lipsticks = [];
+                saveData();
+                render();
+                updateAnalysis();
+            }
+        });
+    }
+
+    // 5. 백업 다운로드
+    const downloadBtn = document.getElementById('downloadBtn');
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', () => {
+            if (lipsticks.length === 0) {
+                alert('저장할 데이터가 없어요! 😅');
+                return;
+            }
+            
+            let csvContent = "브랜드,제품명,컬러명,퍼스널컬러,색상코드\n";
+            lipsticks.forEach(lip => {
+                const row = [
+                    lip.brand,
+                    lip.name,
+                    lip.colorNum,
+                    lip.personalColor,
+                    lip.colorCode
+                ].join(",");
+                csvContent += row + "\n";
+            });
+
+            const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            
+            const date = new Date().toISOString().slice(0,10).replace(/-/g,"");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `MyLipstick_Backup_${date}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    }
+
+    // 6. CSV 업로드
+    const csvUpload = document.getElementById('csvUpload');
+    if (csvUpload) {
+        csvUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const text = event.target.result;
+                const lines = text.split('\n');
+                
+                let addedCount = 0;
+
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+
+                    const parts = line.split(',');
+                    if (parts.length >= 2) {
+                        const newItem = {
+                            id: Date.now() + i,
+                            brand: parts[0]?.trim() || 'Unknown',
+                            name: parts[1]?.trim() || 'Unknown',
+                            colorNum: parts[2]?.trim() || '',
+                            personalColor: parts[3]?.trim() || '잘 모름',
+                            colorCode: parts[4]?.trim() || '#000000',
+                            date: new Date().toISOString()
+                        };
+                        lipsticks.push(newItem);
+                        addedCount++;
+                    }
+                }
+
+                saveData();
+                render();
+                updateAnalysis();
+                alert(`${addedCount}개의 립스틱을 불러왔어요! 💄`);
+                e.target.value = '';
+            };
+            reader.readAsText(file);
+        });
+    }
+}); // --- DOMContentLoaded 끝 ---
+
+
+// --- 헬퍼 함수들 (전역 함수로 유지) ---
 function loadData() {
     const saved = localStorage.getItem('lipstickCollection_v3');
     if (saved) lipsticks = JSON.parse(saved);
@@ -23,60 +221,10 @@ function updateHeaderCount() {
     if (countEl) countEl.textContent = lipsticks.length;
 }
 
-// --- 📸 이미지 업로드 및 색상 추출 ---
-const imageInput = document.getElementById('imageInput');
-// 안전장치: imageInput이 있을 때만 실행
-if (imageInput) {
-    const imagePreview = document.getElementById('imagePreview');
-    
-    imageInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            if (imagePreview) {
-                imagePreview.src = event.target.result;
-                imagePreview.classList.remove('hidden');
-            }
-
-            const img = new Image();
-            img.src = event.target.result;
-            img.onload = function() {
-                try {
-                    const color = colorThief.getColor(img);
-                    const hex = rgbToHex(color[0], color[1], color[2]);
-                    
-                    const inputHex = document.getElementById('inputHex');
-                    const hexText = document.getElementById('hexValueText');
-                    
-                    if (inputHex) inputHex.value = hex;
-                    if (hexText) hexText.textContent = `추출된 색상: ${hex}`;
-                    
-                    const suggestedTone = suggestTone(color[0], color[1], color[2]);
-                    const selectBox = document.getElementById('inputPersonalColor');
-                    
-                    if (selectBox) {
-                        selectBox.value = suggestedTone;
-                        selectBox.classList.add('bg-rose-100');
-                        setTimeout(() => selectBox.classList.remove('bg-rose-100'), 1000);
-                    }
-
-                } catch (err) {
-                    console.error("색상 추출 실패", err);
-                }
-            };
-        };
-        reader.readAsDataURL(file);
-    });
-}
-
-// RGB -> Hex 변환 헬퍼
 function rgbToHex(r, g, b) {
     return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
-// 🤖 간단한 퍼스널 컬러 추정 로직
 function suggestTone(r, g, b) {
     let rabs = r / 255, gabs = g / 255, babs = b / 255;
     let max = Math.max(rabs, gabs, babs), min = Math.min(rabs, gabs, babs);
@@ -110,47 +258,9 @@ function suggestTone(r, g, b) {
     }
 }
 
-// --- 등록 버튼 ---
-const addBtn = document.getElementById('addBtn');
-if (addBtn) {
-    addBtn.addEventListener('click', () => {
-        const brand = document.getElementById('inputBrand')?.value;
-        const name = document.getElementById('inputName')?.value;
-        const colorName = document.getElementById('inputColorName')?.value;
-        const pColor = document.getElementById('inputPersonalColor')?.value;
-        const hex = document.getElementById('inputHex')?.value;
-
-        if (!brand && !name) { alert('브랜드나 제품명을 입력해주세요!'); return; }
-        if (!pColor) { alert('퍼스널 컬러를 선택해주세요!'); return; }
-
-        const newItem = {
-            id: Date.now(),
-            brand: brand || '브랜드 없음',
-            name: name || '제품명 없음',
-            colorNum: colorName || '',
-            personalColor: pColor,
-            colorCode: hex || '#000000',
-            date: new Date().toISOString()
-        };
-
-        lipsticks.push(newItem);
-        saveData();
-        render();
-        updateAnalysis();
-        
-        // 폼 초기화
-        if(document.getElementById('inputBrand')) document.getElementById('inputBrand').value = '';
-        if(document.getElementById('inputName')) document.getElementById('inputName').value = '';
-        if(document.getElementById('inputColorName')) document.getElementById('inputColorName').value = '';
-        if(document.getElementById('imagePreview')) document.getElementById('imagePreview').classList.add('hidden');
-        if(document.getElementById('inputPersonalColor')) document.getElementById('inputPersonalColor').value = '';
-    });
-}
-
-// --- 분석 및 시각화 ---
 function updateAnalysis() {
     const section = document.getElementById('analysisSection');
-    if (!section) return; // 섹션이 없으면 중단
+    if (!section) return;
 
     const validData = lipsticks.filter(l => l.personalColor !== '잘 모름');
     
@@ -263,114 +373,4 @@ window.filterBy = function(category) {
     if(targetBtn) targetBtn.classList.add('active');
     
     render(category);
-}
-
-// --- 샘플 데이터 ---
-const sampleBtn = document.getElementById('sampleBtn');
-// 안전장치: 버튼이 존재할 때만 이벤트 연결
-if (sampleBtn) {
-    sampleBtn.addEventListener('click', () => {
-        const samples = [
-            { id: Date.now() + 1, brand: '롬앤', name: '쥬시래스팅', colorNum: '피그베리', personalColor: '여름 쿨 뮤트', colorCode: '#C85A65' },
-            { id: Date.now() + 2, brand: '맥', name: '루비우', colorNum: 'Retro Matte', personalColor: '겨울 쿨 브라이트', colorCode: '#D31C43' },
-            { id: Date.now() + 3, brand: '3CE', name: '벨벳 립 틴트', colorNum: '다포딜', personalColor: '가을 웜 딥', colorCode: '#B25049' },
-            { id: Date.now() + 4, brand: '페리페라', name: '잉크무드', colorNum: '03호', personalColor: '가을 웜 뮤트', colorCode: '#BC7872' },
-        ];
-        lipsticks = [...lipsticks, ...samples];
-        saveData();
-        render();
-        updateAnalysis();
-        alert('샘플 데이터가 추가되었습니다! 💄');
-    });
-}
-
-// --- 초기화 ---
-const resetBtn = document.getElementById('resetBtn');
-if (resetBtn) {
-    resetBtn.addEventListener('click', () => {
-        if(confirm('모든 데이터를 삭제하시겠습니까?')) {
-            lipsticks = [];
-            saveData();
-            render();
-            updateAnalysis();
-        }
-    });
-}
-
-// --- 백업 다운로드 ---
-const downloadBtn = document.getElementById('downloadBtn');
-if (downloadBtn) {
-    downloadBtn.addEventListener('click', () => {
-        if (lipsticks.length === 0) {
-            alert('저장할 데이터가 없어요! 😅');
-            return;
-        }
-        
-        let csvContent = "브랜드,제품명,컬러명,퍼스널컬러,색상코드\n";
-        lipsticks.forEach(lip => {
-            const row = [
-                lip.brand,
-                lip.name,
-                lip.colorNum,
-                lip.personalColor,
-                lip.colorCode
-            ].join(",");
-            csvContent += row + "\n";
-        });
-
-        const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        
-        const date = new Date().toISOString().slice(0,10).replace(/-/g,"");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `MyLipstick_Backup_${date}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    });
-}
-
-// --- CSV 업로드 ---
-const csvUpload = document.getElementById('csvUpload');
-if (csvUpload) {
-    csvUpload.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const text = event.target.result;
-            const lines = text.split('\n');
-            
-            let addedCount = 0;
-
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (!line) continue;
-
-                const parts = line.split(',');
-                if (parts.length >= 2) {
-                    const newItem = {
-                        id: Date.now() + i,
-                        brand: parts[0]?.trim() || 'Unknown',
-                        name: parts[1]?.trim() || 'Unknown',
-                        colorNum: parts[2]?.trim() || '',
-                        personalColor: parts[3]?.trim() || '잘 모름',
-                        colorCode: parts[4]?.trim() || '#000000',
-                        date: new Date().toISOString()
-                    };
-                    lipsticks.push(newItem);
-                    addedCount++;
-                }
-            }
-
-            saveData();
-            render();
-            updateAnalysis();
-            alert(`${addedCount}개의 립스틱을 불러왔어요! 💄`);
-            e.target.value = '';
-        };
-        reader.readAsText(file);
-    });
 }
