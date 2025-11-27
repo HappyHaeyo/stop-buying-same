@@ -107,12 +107,40 @@
 
         <div id="lipstickGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
 
-        <div class="mt-8 grid grid-cols-2 gap-3 pb-10">
-             <button id="sampleBtn" class="py-3 bg-white border border-stone-200 text-stone-500 text-xs rounded-xl">샘플 데이터 넣기</button>
-             <button id="resetBtn" class="py-3 bg-white border border-stone-200 text-red-400 text-xs rounded-xl">전체 초기화</button>
-        </div>
-    </main>
+        <div class="mt-8 mb-10">
+            <h4 class="text-xs font-bold text-stone-400 mb-3 ml-1">데이터 관리</h4>
+            <div class="grid grid-cols-2 gap-3">
+                <label class="flex flex-col items-center justify-center gap-2 py-4 bg-white border border-stone-200 rounded-2xl cursor-pointer hover:bg-stone-50 transition shadow-sm group">
+                    <div class="p-2 bg-stone-100 rounded-full group-hover:bg-stone-200 transition">
+                        <i data-lucide="upload" class="w-4 h-4 text-stone-600"></i>
+                    </div>
+                    <span class="text-xs font-semibold text-stone-600">CSV 가져오기</span>
+                    <input type="file" id="csvUpload" accept=".csv" class="hidden">
+                </label>
 
-    <script src="script.js"></script>
-</body>
-</html>
+                <button id="downloadBtn" class="flex flex-col items-center justify-center gap-2 py-4 bg-white border border-stone-200 rounded-2xl hover:bg-stone-50 transition shadow-sm group">
+                    <div class="p-2 bg-stone-100 rounded-full group-hover:bg-stone-200 transition">
+                        <i data-lucide="download" class="w-4 h-4 text-stone-600"></i>
+                    </div>
+                    <span class="text-xs font-semibold text-stone-600">백업 저장</span>
+                </button>
+
+                <button id="sampleBtn" class="flex flex-col items-center justify-center gap-2 py-4 bg-white border border-stone-200 rounded-2xl hover:bg-stone-50 transition shadow-sm group">
+                    <div class="p-2 bg-amber-50 rounded-full group-hover:bg-amber-100 transition">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i>
+                    </div>
+                    <span class="text-xs font-semibold text-stone-600">샘플 채우기</span>
+                </button>
+
+                <button id="resetBtn" class="flex flex-col items-center justify-center gap-2 py-4 bg-white border border-rose-100 rounded-2xl hover:bg-rose-50 transition shadow-sm group">
+                    <div class="p-2 bg-rose-50 rounded-full group-hover:bg-rose-100 transition">
+                        <i data-lucide="trash-2" class="w-4 h-4 text-rose-500"></i>
+                    </div>
+                    <span class="text-xs font-semibold text-rose-500">전체 초기화</span>
+                </button>
+            </div>
+            <p class="text-center text-[10px] text-stone-400 mt-6">
+                데이터는 서버가 아닌 고객님의 기기에 안전하게 저장됩니다.<br>
+                기기 변경 전 반드시 '백업 저장'을 해주세요.
+            </p>
+        </div>
