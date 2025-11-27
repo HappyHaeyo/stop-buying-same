@@ -7,358 +7,91 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
-    <style>
-        body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; background-color: #FDFBF7; }
-        
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
-        
-        /* Animations */
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Swatch Circle */
-        .color-swatch {
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.1);
-            border: 2px solid white;
-        }
-
-        /* Glassmorphism Header */
-        .glass-header {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body class="text-slate-800 pb-20">
+<body class="text-slate-800 pb-24">
 
-    <header class="glass-header fixed top-0 w-full z-50 transition-all duration-300">
+    <header class="glass-header fixed top-0 w-full z-50">
         <div class="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
             <div>
-                <h1 class="text-lg font-bold text-rose-950 tracking-tight">하늘 아래 같은 색조 없다</h1>
-                <p class="text-xs text-rose-400 font-medium">Smart Beauty Collector</p>
+                <h1 class="text-lg font-bold text-rose-950 tracking-tight">Smart Lip Collector</h1>
+                <p class="text-xs text-rose-400 font-medium">퍼스널 컬러 분석기</p>
             </div>
             <div class="text-xs font-medium bg-rose-100 text-rose-600 px-3 py-1 rounded-full">
-                총 <span id="headerTotalCount">0</span>개
+                <span id="headerTotalCount">0</span> items
             </div>
         </div>
     </header>
 
     <main class="max-w-3xl mx-auto px-4 pt-20">
         
-        <div id="dashboard" class="mb-6 fade-in">
-            <div class="bg-white p-5 rounded-3xl shadow-sm border border-stone-100">
-                <h2 class="text-xl font-bold mb-2">내 화장대 분석 💄</h2>
-                <div class="grid grid-cols-3 gap-2 mt-4 text-center">
-                    <div class="bg-stone-50 p-3 rounded-2xl">
-                        <div id="brandCount" class="text-lg font-bold text-stone-700">0</div>
-                        <div class="text-xs text-stone-400 mt-1">브랜드</div>
-                    </div>
-                    <div class="bg-rose-50 p-3 rounded-2xl">
-                        <div id="categoryCount" class="text-lg font-bold text-rose-600">0</div>
-                        <div class="text-xs text-rose-400 mt-1">카테고리</div>
-                    </div>
-                    <div class="bg-stone-50 p-3 rounded-2xl">
-                        <div id="finishCount" class="text-lg font-bold text-stone-700">0</div>
-                        <div class="text-xs text-stone-400 mt-1">제형</div>
-                    </div>
+        <div id="analysisSection" class="mb-6 fade-in hidden">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-rose-100">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <i data-lucide="pie-chart" class="w-5 h-5 text-rose-500"></i>
+                    내 화장대 퍼스널 컬러 분석
+                </h2>
+                
+                <div class="h-64 relative w-full mb-6">
+                    <canvas id="personalColorChart"></canvas>
+                </div>
+
+                <div class="bg-slate-50 rounded-xl p-4 text-sm leading-relaxed border border-slate-100">
+                    <p id="analysisText" class="text-slate-700">
+                        데이터가 부족해요! 립스틱을 등록하면 분석해드릴게요. 🧐
+                    </p>
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 mb-6 fade-in">
-            <button id="sampleBtn" class="flex items-center justify-center gap-2 py-3 bg-white border border-stone-200 text-stone-600 rounded-xl text-sm font-semibold hover:bg-stone-50 transition shadow-sm">
-                <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i> 샘플 채우기
-            </button>
-            <label class="flex items-center justify-center gap-2 py-3 bg-white border border-stone-200 text-stone-600 rounded-xl text-sm font-semibold hover:bg-stone-50 transition cursor-pointer shadow-sm">
-                <i data-lucide="upload" class="w-4 h-4"></i> CSV 가져오기
-                <input type="file" id="csvUpload" accept=".csv" class="hidden">
-            </label>
-            <button id="downloadBtn" class="flex items-center justify-center gap-2 py-3 bg-white border border-stone-200 text-stone-600 rounded-xl text-sm font-semibold hover:bg-stone-50 transition shadow-sm">
-                <i data-lucide="download" class="w-4 h-4"></i> 백업 저장
-            </button>
-            <button id="deleteAllBtn" class="flex items-center justify-center gap-2 py-3 bg-white border border-rose-100 text-rose-500 rounded-xl text-sm font-semibold hover:bg-rose-50 transition shadow-sm">
-                <i data-lucide="trash-2" class="w-4 h-4"></i> 초기화
-            </button>
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-stone-100 mb-6">
+            <h3 class="text-sm font-bold mb-3 text-stone-600">새 립스틱 등록하기</h3>
+            <div class="grid grid-cols-2 gap-2 mb-2">
+                <input type="text" id="inputBrand" placeholder="브랜드 (예: 롬앤)" class="input-field">
+                <input type="text" id="inputName" placeholder="제품명 (예: 쥬시래스팅)" class="input-field">
+            </div>
+            <div class="grid grid-cols-2 gap-2 mb-2">
+                <input type="text" id="inputColor" placeholder="컬러명 (예: 피그베리)" class="input-field">
+                <select id="inputPersonalColor" class="input-field">
+                    <option value="" disabled selected>퍼스널 컬러 선택</option>
+                    <option value="봄 웜 라이트">🌸 봄 웜 라이트</option>
+                    <option value="봄 웜 브라이트">🌺 봄 웜 브라이트</option>
+                    <option value="여름 쿨 라이트">🍧 여름 쿨 라이트</option>
+                    <option value="여름 쿨 뮤트">🌫️ 여름 쿨 뮤트</option>
+                    <option value="가을 웜 뮤트">🍂 가을 웜 뮤트</option>
+                    <option value="가을 웜 딥">🍁 가을 웜 딥</option>
+                    <option value="겨울 쿨 브라이트">🍒 겨울 쿨 브라이트</option>
+                    <option value="겨울 쿨 딥">🍷 겨울 쿨 딥</option>
+                    <option value="기타">🤔 잘 모르겠음</option>
+                </select>
+            </div>
+            <div class="flex gap-2">
+                <input type="color" id="inputHex" class="h-10 w-14 rounded cursor-pointer border-0 bg-transparent" value="#ff0000">
+                <button id="addBtn" class="flex-1 bg-rose-500 text-white rounded-xl text-sm font-bold hover:bg-rose-600 transition">등록하기</button>
+            </div>
         </div>
 
-        <div class="sticky top-[60px] z-40 bg-[#FDFBF7] pb-4 pt-2">
-            <div class="relative mb-3">
-                <i data-lucide="search" class="absolute left-4 top-1/2 transform -translate-y-1/2 text-stone-400 w-5 h-5"></i>
-                <input type="text" id="searchInput" placeholder="브랜드, 제품명, 컬러명 검색..." 
-                    class="w-full pl-12 pr-4 py-3 bg-white border border-stone-200 rounded-2xl text-sm focus:outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 shadow-sm transition">
-            </div>
-            
+        <div class="sticky top-[60px] z-40 bg-[#FDFBF7] pb-2 pt-2">
             <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-                <select id="sortSelect" class="flex-none px-3 py-2 bg-white border border-stone-200 rounded-lg text-xs font-medium text-stone-600 focus:outline-none">
-                    <option value="brand">브랜드순</option>
-                    <option value="color">색상순</option>
-                </select>
-                <select id="categoryFilter" class="flex-none px-3 py-2 bg-white border border-stone-200 rounded-lg text-xs font-medium text-stone-600 focus:outline-none">
-                    <option value="all">모든 카테고리</option>
-                </select>
-                <select id="finishFilter" class="flex-none px-3 py-2 bg-white border border-stone-200 rounded-lg text-xs font-medium text-stone-600 focus:outline-none">
-                    <option value="all">모든 제형</option>
-                </select>
+                <button onclick="filterBy('all')" class="filter-chip active" id="filter-all">전체</button>
+                <button onclick="filterBy('봄')" class="filter-chip" id="filter-spring">봄웜</button>
+                <button onclick="filterBy('여름')" class="filter-chip" id="filter-summer">여름쿨</button>
+                <button onclick="filterBy('가을')" class="filter-chip" id="filter-autumn">가을웜</button>
+                <button onclick="filterBy('겨울')" class="filter-chip" id="filter-winter">겨울쿨</button>
             </div>
         </div>
 
-        <div id="emptyState" class="hidden text-center py-20 fade-in">
-            <div class="w-20 h-20 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i data-lucide="shopping-bag" class="w-8 h-8 text-stone-300"></i>
+        <div id="lipstickGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             </div>
-            <h3 class="text-lg font-bold text-stone-700 mb-2">파우치가 비어있어요</h3>
-            <p class="text-sm text-stone-500 mb-6">가지고 있는 립스틱을 등록해서<br>현명한 소비를 시작해보세요!</p>
-            <div class="bg-white p-4 rounded-xl border border-stone-100 text-left text-xs text-stone-500 inline-block">
-                <p class="font-bold mb-1">💡 CSV 업로드 가이드</p>
-                <code>브랜드,제품명,컬러명,색상코드(#),카테고리,피니쉬</code>
-            </div>
-        </div>
 
-        <div id="lipstickGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-10">
-            </div>
+        <div class="mt-8 grid grid-cols-2 gap-3">
+             <button id="sampleBtn" class="py-3 bg-white border border-stone-200 text-stone-500 text-xs rounded-xl">샘플 데이터 넣기</button>
+             <button id="resetBtn" class="py-3 bg-white border border-stone-200 text-red-400 text-xs rounded-xl">전체 초기화</button>
+        </div>
 
     </main>
 
-    <footer class="text-center py-8 text-xs text-stone-400">
-        <p>환경을 생각하는 립덕후의 현명한 선택</p>
-        <p class="mt-1">© 2025 Smart Lip Collector</p>
-    </footer>
-
-    <script>
-        // Icon Initialization
-        lucide.createIcons();
-
-        var lipsticks = [];
-
-        function loadData() {
-            var saved = localStorage.getItem('lipstickCollection');
-            if (saved) {
-                try {
-                    lipsticks = JSON.parse(saved);
-                } catch (e) {
-                    lipsticks = [];
-                }
-            }
-            render();
-        }
-
-        function saveData() {
-            localStorage.setItem('lipstickCollection', JSON.stringify(lipsticks));
-            updateHeaderCount();
-        }
-
-        function updateHeaderCount() {
-            document.getElementById('headerTotalCount').textContent = lipsticks.length;
-        }
-
-        // --- File Upload & Data Handling ---
-        document.getElementById('csvUpload').addEventListener('change', function(e) {
-            var file = e.target.files[0];
-            if (!file) return;
-
-            var reader = new FileReader();
-            reader.onload = function(event) {
-                var text = event.target.result;
-                var lines = text.split('\n');
-                var filteredLines = lines.filter(line => line.trim() !== '');
-                
-                var newLipsticks = [];
-                for (var j = 1; j < filteredLines.length; j++) {
-                    var line = filteredLines[j];
-                    var parts = line.split(',').map(p => p.trim());
-                    
-                    if (parts[0]) {
-                        newLipsticks.push({
-                            id: Date.now() + j,
-                            brand: parts[0] || '',
-                            name: parts[1] || '',
-                            colorNum: parts[2] || '',
-                            colorCode: parts[3] || '#000000',
-                            category: parts[4] || '기타',
-                            finish: parts[5] || '기타'
-                        });
-                    }
-                }
-
-                lipsticks = lipsticks.concat(newLipsticks);
-                saveData();
-                render();
-                alert(newLipsticks.length + '개의 립스틱이 추가되었습니다.');
-            };
-            reader.readAsText(file);
-            e.target.value = '';
-        });
-
-        document.getElementById('downloadBtn').addEventListener('click', function() {
-            if (lipsticks.length === 0) {
-                alert('저장된 데이터가 없습니다.');
-                return;
-            }
-            var header = '브랜드,제품명,컬러번호,색상코드,카테고리,피니쉬\n';
-            var rows = lipsticks.map(lip => 
-                `${lip.brand},${lip.name},${lip.colorNum},${lip.colorCode},${lip.category},${lip.finish}`
-            ).join('\n');
-            
-            var blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
-            var link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `mylipstick_${new Date().toISOString().slice(0,10)}.csv`;
-            link.click();
-        });
-
-        document.getElementById('sampleBtn').addEventListener('click', function() {
-            var samples = [
-                { id: Date.now() + 1, brand: '라카', name: '프루티 글램 틴트', colorNum: '115 엔비', colorCode: '#a0152a', category: '틴트', finish: '글로우' },
-                { id: Date.now() + 2, brand: '롬앤', name: '쥬시래스팅틴트', colorNum: '06 피그베리', colorCode: '#D4847C', category: '틴트', finish: '글로우' },
-                { id: Date.now() + 3, brand: '맥', name: '파우더 키스', colorNum: '디보티드 투 칠리', colorCode: '#B54942', category: '립스틱', finish: '매트' },
-                { id: Date.now() + 4, brand: '3CE', name: '블러 워터 틴트', colorNum: '레이다운', colorCode: '#BD7774', category: '틴트', finish: '블러' },
-                { id: Date.now() + 5, brand: '샤넬', name: '루쥬 알뤼르 락끄', colorNum: '62 스틸', colorCode: '#B76E6A', category: '틴트', finish: '새틴' }
-            ];
-            lipsticks = lipsticks.concat(samples);
-            saveData();
-            render();
-        });
-
-        document.getElementById('deleteAllBtn').addEventListener('click', function() {
-            if (lipsticks.length === 0) return;
-            if (confirm('정말 모든 데이터를 삭제하시겠습니까? 되돌릴 수 없습니다.')) {
-                lipsticks = [];
-                localStorage.removeItem('lipstickCollection');
-                render();
-            }
-        });
-
-        window.deleteLipstick = function(id) {
-            if(confirm('이 립스틱을 삭제할까요?')) {
-                lipsticks = lipsticks.filter(l => l.id !== id);
-                saveData();
-                render();
-            }
-        };
-
-        // --- Rendering Logic ---
-        function render() {
-            var searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            var categoryFilter = document.getElementById('categoryFilter').value;
-            var finishFilter = document.getElementById('finishFilter').value;
-            var sortBy = document.getElementById('sortSelect').value;
-
-            // Filter
-            var filtered = lipsticks.filter(function(lip) {
-                var matchSearch = (lip.brand + lip.name + lip.colorNum).toLowerCase().includes(searchTerm);
-                var matchCategory = categoryFilter === 'all' || lip.category === categoryFilter;
-                var matchFinish = finishFilter === 'all' || lip.finish === finishFilter;
-                return matchSearch && matchCategory && matchFinish;
-            });
-
-            // Sort
-            filtered.sort(function(a, b) {
-                if (sortBy === 'color') return a.colorCode.localeCompare(b.colorCode);
-                return a.brand.localeCompare(b.brand);
-            });
-
-            // Stats Update
-            var categories = [...new Set(lipsticks.map(l => l.category))];
-            var finishes = [...new Set(lipsticks.map(l => l.finish))];
-            var brands = [...new Set(lipsticks.map(l => l.brand))];
-
-            document.getElementById('categoryCount').textContent = categories.length;
-            document.getElementById('finishCount').textContent = finishes.length;
-            document.getElementById('brandCount').textContent = brands.length;
-            updateHeaderCount();
-
-            // Render Dropdowns (Only if needed to prevent reset loop, simple implementation here)
-            updateDropdown('categoryFilter', categories, categoryFilter);
-            updateDropdown('finishFilter', finishes, finishFilter);
-
-            // Render Grid
-            var grid = document.getElementById('lipstickGrid');
-            var empty = document.getElementById('emptyState');
-            var dashboard = document.getElementById('dashboard');
-
-            if (lipsticks.length === 0) {
-                empty.classList.remove('hidden');
-                grid.classList.add('hidden');
-                dashboard.classList.add('hidden');
-            } else {
-                empty.classList.add('hidden');
-                grid.classList.remove('hidden');
-                dashboard.classList.remove('hidden');
-
-                if (filtered.length === 0) {
-                    grid.innerHTML = '<div class="col-span-full text-center py-10 text-stone-400">검색 결과가 없습니다 😢</div>';
-                } else {
-                    var html = '';
-                    filtered.forEach(function(lip) {
-                        // Determine text color based on background luminance for the color chip
-                        var hex = lip.colorCode.replace('#', '');
-                        var r = parseInt(hex.substr(0, 2), 16);
-                        var g = parseInt(hex.substr(2, 2), 16);
-                        var b = parseInt(hex.substr(4, 2), 16);
-                        var yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-                        var textColor = (yiq >= 128) ? 'text-black' : 'text-white';
-
-                        html += `
-                        <div class="bg-white rounded-2xl p-4 shadow-sm border border-stone-100 flex gap-4 items-center relative fade-in group transition hover:shadow-md hover:-translate-y-1">
-                            <div class="flex-none w-16 h-16 rounded-full color-swatch shadow-inner relative overflow-hidden" style="background-color: ${lip.colorCode}">
-                                <div class="absolute inset-0 bg-gradient-to-tr from-black/10 to-transparent pointer-events-none"></div>
-                            </div>
-                            
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center gap-2 mb-1">
-                                    <span class="text-[10px] font-bold tracking-wider uppercase text-stone-400">${lip.brand}</span>
-                                </div>
-                                <h3 class="font-bold text-stone-800 text-sm truncate leading-tight">${lip.name}</h3>
-                                <p class="text-xs text-rose-500 font-medium mt-0.5 truncate">${lip.colorNum}</p>
-                                
-                                <div class="flex gap-1 mt-2">
-                                    <span class="px-2 py-0.5 bg-stone-100 text-stone-500 text-[10px] rounded-md">${lip.category}</span>
-                                    <span class="px-2 py-0.5 bg-stone-100 text-stone-500 text-[10px] rounded-md">${lip.finish}</span>
-                                </div>
-                            </div>
-
-                            <button onclick="deleteLipstick(${lip.id})" class="absolute top-3 right-3 text-stone-300 hover:text-red-400 p-1 transition">
-                                <i data-lucide="x" class="w-4 h-4"></i>
-                            </button>
-                        </div>
-                        `;
-                    });
-                    grid.innerHTML = html;
-                    lucide.createIcons(); // Re-init icons for new elements
-                }
-            }
-        }
-
-        function updateDropdown(id, items, currentValue) {
-            var select = document.getElementById(id);
-            var label = id === 'categoryFilter' ? '모든 카테고리' : '모든 제형';
-            
-            // Keep current options if user is interacting? 
-            // Simple rebuild for now to keep state synced
-            var html = `<option value="all">${label}</option>`;
-            items.forEach(function(item) {
-                html += `<option value="${item}">${item}</option>`;
-            });
-            
-            // Check if current selection still exists
-            select.innerHTML = html;
-            select.value = currentValue;
-        }
-
-        // Event Listeners
-        document.getElementById('searchInput').addEventListener('input', render);
-        document.getElementById('categoryFilter').addEventListener('change', render);
-        document.getElementById('finishFilter').addEventListener('change', render);
-        document.getElementById('sortSelect').addEventListener('change', render);
-
-        // Initial Load
-        loadData();
-
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
