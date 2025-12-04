@@ -271,7 +271,7 @@ function suggestTone(r, g, b) {
     }
 }
 
-// 💄 차트 업데이트 (11가지 톤)
+// 💄 차트 업데이트 (11가지 톤 + NEW 컬러 적용)
 function updateAnalysis() {
     const section = document.getElementById('analysisSection');
     if (!section) return;
@@ -300,19 +300,19 @@ function updateAnalysis() {
         const ctx = canvas.getContext('2d');
         if (myChart) myChart.destroy();
 
-        // 🌈 11가지 퍼스널 컬러 고유 색상
+        // 🌈 11가지 퍼스널 컬러 고유 색상 (사용자 지정 색상 적용 완료)
         const toneColors = [
-            '#FFDAC1', // 봄라
-            '#FF6F61', // 봄브
-            '#C7CEEA', // 여라
-            '#FE59C2', // 여브 (팝핑크) 🍉 NEW
-            '#A68DAD', // 여뮤
-            '#DDBEA9', // 갈뮤
-            '#8D5B4C', // 갈딥
-            '#4B3621', // 갈닼
-            '#FF52A2', // 겨브
-            '#68001D', // 겨딥
-            '#2A0A12'  // 겨닼
+            '#e56b68', // 봄라
+            '#fa361c', // 봄브
+            '#f0a9b1', // 여라
+            '#e55c9d', // 여브
+            '#c0595a', // 여뮤
+            '#c96f6f', // 갈뮤
+            '#b65e61', // 갈딥
+            '#4d313d', // 갈닼
+            '#D31C43', // 겨브
+            '#852438', // 겨딥
+            '#4c1d30'  // 겨닼
         ];
 
         myChart = new Chart(ctx, {
@@ -324,7 +324,7 @@ function updateAnalysis() {
                     data: Object.values(counts),
                     backgroundColor: toneColors,
                     borderRadius: 50,
-                    barThickness: 12, // 11개라 더 얇게
+                    barThickness: 12, 
                     borderSkipped: false,
                 }]
             },
