@@ -98,9 +98,10 @@ document.addEventListener('DOMContentLoaded', () => {
         sampleBtn.addEventListener('click', () => {
             const samples = [
                 { id: Date.now() + 1, brand: '롬앤', name: '쥬시래스팅', colorNum: '피그베리', personalColor: '여름 쿨 뮤트', colorCode: '#C85A65' },
-                { id: Date.now() + 2, brand: '맥', name: '루비우', colorNum: 'Retro Matte', personalColor: '겨울 쿨 브라이트', colorCode: '#D31C43' },
+                { id: Date.now() + 2, brand: '페리페라', name: '잉크무드', colorNum: '갓기천사', personalColor: '여름 쿨 브라이트', colorCode: '#FE59C2' },
                 { id: Date.now() + 3, brand: '3CE', name: '벨벳 립 틴트', colorNum: '다포딜', personalColor: '가을 웜 딥', colorCode: '#B25049' },
-                { id: Date.now() + 4, brand: '샤넬', name: '루쥬 알뤼르', colorNum: '99호', personalColor: '겨울 쿨 다크', colorCode: '#3E0015' },
+                { id: Date.now() + 4, brand: '입생로랑', name: '더 슬림', colorNum: '1966', personalColor: '가을 웜 다크', colorCode: '#4B3621' },
+                { id: Date.now() + 5, brand: '샤넬', name: '루쥬 알뤼르', colorNum: '99호', personalColor: '겨울 쿨 다크', colorCode: '#3E0015' },
             ];
             lipsticks = [...lipsticks, ...samples];
             saveData();
@@ -228,7 +229,7 @@ function rgbToHex(r, g, b) {
     return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
-// 🤖 AI 분석 로직 업그레이드: 겨울 딥 vs 다크 구분
+// 🤖 AI 분석 로직 (11가지 톤)
 function suggestTone(r, g, b) {
     let rabs = r / 255, gabs = g / 255, babs = b / 255;
     let max = Math.max(rabs, gabs, babs), min = Math.min(rabs, gabs, babs);
@@ -253,18 +254,24 @@ function suggestTone(r, g, b) {
         if (v > 0.7 && s < 0.6) return '봄 웜 라이트';
         if (v > 0.6 && s >= 0.6) return '봄 웜 브라이트';
         if (v <= 0.6 && s < 0.6) return '가을 웜 뮤트';
+        if (v <= 0.3) return '가을 웜 다크';
         return '가을 웜 딥';
     } else {
-        if (v > 0.7 && s < 0.5) return '여름 쿨 라이트';
-        if (v > 0.6 && s < 0.7) return '여름 쿨 뮤트';
-        if (v > 0.5 && s >= 0.7) return '겨울 쿨 브라이트';
-        // 🍷 명도(v)가 0.3 이하면 다크, 그 이상이면 딥으로 분류
+        // 🍉 여름 쿨톤 분기 처리
+        if (v > 0.7) {
+            if (s >= 0.5) return '여름 쿨 브라이트'; // 밝고 채도 높음
+            return '여름 쿨 라이트';
+        }
+        if (v > 0.5 && s < 0.7) return '여름 쿨 뮤트';
+        
+        // 🍷 겨울 쿨톤
         if (v <= 0.3) return '겨울 쿨 다크';
+        if (s >= 0.7) return '겨울 쿨 브라이트';
         return '겨울 쿨 딥';
     }
 }
 
-// 💄 차트 업데이트 (9가지 톤)
+// 💄 차트 업데이트 (11가지 톤)
 function updateAnalysis() {
     const section = document.getElementById('analysisSection');
     if (!section) return;
@@ -279,8 +286,8 @@ function updateAnalysis() {
 
     const counts = {
         '봄 웜 라이트': 0, '봄 웜 브라이트': 0,
-        '여름 쿨 라이트': 0, '여름 쿨 뮤트': 0,
-        '가을 웜 뮤트': 0, '가을 웜 딥': 0,
+        '여름 쿨 라이트': 0, '여름 쿨 브라이트': 0, '여름 쿨 뮤트': 0,
+        '가을 웜 뮤트': 0, '가을 웜 딥': 0, '가을 웜 다크': 0,
         '겨울 쿨 브라이트': 0, '겨울 쿨 딥': 0, '겨울 쿨 다크': 0 
     };
 
@@ -293,29 +300,31 @@ function updateAnalysis() {
         const ctx = canvas.getContext('2d');
         if (myChart) myChart.destroy();
 
-        // 🌈 9가지 퍼스널 컬러 색상 (다크 추가됨)
+        // 🌈 11가지 퍼스널 컬러 고유 색상
         const toneColors = [
             '#FFDAC1', // 봄라
             '#FF6F61', // 봄브
             '#C7CEEA', // 여라
+            '#FE59C2', // 여브 (팝핑크) 🍉 NEW
             '#A68DAD', // 여뮤
             '#DDBEA9', // 갈뮤
             '#8D5B4C', // 갈딥
+            '#4B3621', // 갈닼
             '#FF52A2', // 겨브
-            '#68001D', // 겨딥 (와인)
-            '#2A0A12'  // 겨닼 (블랙체리) 🖤
+            '#68001D', // 겨딥
+            '#2A0A12'  // 겨닼
         ];
 
         myChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['봄라', '봄브', '여라', '여뮤', '갈뮤', '갈딥', '겨브', '겨딥', '겨닼'],
+                labels: ['봄라', '봄브', '여라', '여브', '여뮤', '갈뮤', '갈딥', '갈닼', '겨브', '겨딥', '겨닼'],
                 datasets: [{
                     label: '내 컬렉션',
                     data: Object.values(counts),
                     backgroundColor: toneColors,
                     borderRadius: 50,
-                    barThickness: 16, // 막대가 9개라 조금 더 얇게
+                    barThickness: 12, // 11개라 더 얇게
                     borderSkipped: false,
                 }]
             },
