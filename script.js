@@ -3,10 +3,10 @@ let lipsticks = [];
 let myChart = null;
 const colorThief = new ColorThief();
 
-// --- HTML이 모두 로딩된 후 실행 (안전장치) ---
+// --- HTML이 모두 로딩된 후 실행 ---
 document.addEventListener('DOMContentLoaded', () => {
-    lucide.createIcons(); // 아이콘 초기화
-    loadData(); // 데이터 불러오기
+    lucide.createIcons(); 
+    loadData(); 
 
     // 1. 📸 이미지 업로드 및 색상 추출
     const imageInput = document.getElementById('imageInput');
@@ -100,16 +100,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 { id: Date.now() + 1, brand: '롬앤', name: '쥬시래스팅', colorNum: '피그베리', personalColor: '여름 쿨 뮤트', colorCode: '#C85A65' },
                 { id: Date.now() + 2, brand: '맥', name: '루비우', colorNum: 'Retro Matte', personalColor: '겨울 쿨 브라이트', colorCode: '#D31C43' },
                 { id: Date.now() + 3, brand: '3CE', name: '벨벳 립 틴트', colorNum: '다포딜', personalColor: '가을 웜 딥', colorCode: '#B25049' },
-                { id: Date.now() + 4, brand: '페리페라', name: '잉크무드', colorNum: '03호', personalColor: '가을 웜 뮤트', colorCode: '#BC7872' },
-                { id: Date.now() + 5, brand: '에뛰드', name: '픽싱틴트', colorNum: '05 미드나잇', colorCode: '#68001D', personalColor: '겨울 쿨 딥' },
-                { id: Date.now() + 6, brand: '라카', name: '프루티글램', colorNum: '103 험밍', colorCode: '#FFDAC1', personalColor: '봄 웜 라이트' }
+                { id: Date.now() + 4, brand: '샤넬', name: '루쥬 알뤼르', colorNum: '99호', personalColor: '겨울 쿨 다크', colorCode: '#3E0015' },
             ];
             lipsticks = [...lipsticks, ...samples];
             saveData();
             render();
             updateAnalysis();
 
-            // 버튼 텍스트 변경으로 피드백
             const originalText = sampleBtn.innerHTML;
             sampleBtn.innerHTML = '<div class="p-2 bg-green-50 rounded-full"><i data-lucide="check" class="w-4 h-4 text-green-500"></i></div><span class="text-xs font-semibold text-green-600">추가됨!</span>';
             setTimeout(() => {
@@ -177,13 +174,11 @@ document.addEventListener('DOMContentLoaded', () => {
             reader.onload = (event) => {
                 const text = event.target.result;
                 const lines = text.split('\n');
-
                 let addedCount = 0;
 
                 for (let i = 1; i < lines.length; i++) {
                     const line = lines[i].trim();
                     if (!line) continue;
-
                     const parts = line.split(',');
                     if (parts.length >= 2) {
                         const newItem = {
@@ -199,7 +194,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         addedCount++;
                     }
                 }
-
                 saveData();
                 render();
                 updateAnalysis();
@@ -209,10 +203,10 @@ document.addEventListener('DOMContentLoaded', () => {
             reader.readAsText(file);
         });
     }
-}); // --- DOMContentLoaded 끝 ---
+}); 
 
 
-// --- 헬퍼 함수들 (전역 함수로 유지) ---
+// --- 헬퍼 함수들 ---
 function loadData() {
     const saved = localStorage.getItem('lipstickCollection_v3');
     if (saved) lipsticks = JSON.parse(saved);
@@ -234,6 +228,7 @@ function rgbToHex(r, g, b) {
     return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
+// 🤖 AI 분석 로직 업그레이드: 겨울 딥 vs 다크 구분
 function suggestTone(r, g, b) {
     let rabs = r / 255, gabs = g / 255, babs = b / 255;
     let max = Math.max(rabs, gabs, babs), min = Math.min(rabs, gabs, babs);
@@ -263,11 +258,13 @@ function suggestTone(r, g, b) {
         if (v > 0.7 && s < 0.5) return '여름 쿨 라이트';
         if (v > 0.6 && s < 0.7) return '여름 쿨 뮤트';
         if (v > 0.5 && s >= 0.7) return '겨울 쿨 브라이트';
+        // 🍷 명도(v)가 0.3 이하면 다크, 그 이상이면 딥으로 분류
+        if (v <= 0.3) return '겨울 쿨 다크';
         return '겨울 쿨 딥';
     }
 }
 
-// 💄 차트 디자인 수정: 8가지 톤 색상 확실하게 분리!
+// 💄 차트 업데이트 (9가지 톤)
 function updateAnalysis() {
     const section = document.getElementById('analysisSection');
     if (!section) return;
@@ -284,7 +281,7 @@ function updateAnalysis() {
         '봄 웜 라이트': 0, '봄 웜 브라이트': 0,
         '여름 쿨 라이트': 0, '여름 쿨 뮤트': 0,
         '가을 웜 뮤트': 0, '가을 웜 딥': 0,
-        '겨울 쿨 브라이트': 0, '겨울 쿨 딥': 0
+        '겨울 쿨 브라이트': 0, '겨울 쿨 딥': 0, '겨울 쿨 다크': 0 
     };
 
     validData.forEach(lip => {
@@ -296,28 +293,29 @@ function updateAnalysis() {
         const ctx = canvas.getContext('2d');
         if (myChart) myChart.destroy();
 
-        // 🌈 8가지 퍼스널 컬러 고유 색상 지정 (그라데이션 X, 선명한 단색)
+        // 🌈 9가지 퍼스널 컬러 색상 (다크 추가됨)
         const toneColors = [
-            '#FFDAC1', // 봄라 (살구)
-            '#FF6F61', // 봄브 (코랄)
-            '#C7CEEA', // 여라 (라벤더)
-            '#A68DAD', // 여뮤 (회보라) - 이제 여라랑 다름!
-            '#DDBEA9', // 갈뮤 (베이지)
-            '#8D5B4C', // 갈딥 (벽돌) - 이제 갈뮤랑 다름!
-            '#FF52A2', // 겨브 (핫핑크)
-            '#68001D'  // 겨딥 (와인) - 이제 겨브랑 다름!
+            '#FFDAC1', // 봄라
+            '#FF6F61', // 봄브
+            '#C7CEEA', // 여라
+            '#A68DAD', // 여뮤
+            '#DDBEA9', // 갈뮤
+            '#8D5B4C', // 갈딥
+            '#FF52A2', // 겨브
+            '#68001D', // 겨딥 (와인)
+            '#2A0A12'  // 겨닼 (블랙체리) 🖤
         ];
 
         myChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['봄라', '봄브', '여라', '여뮤', '갈뮤', '갈딥', '겨브', '겨딥'],
+                labels: ['봄라', '봄브', '여라', '여뮤', '갈뮤', '갈딥', '겨브', '겨딥', '겨닼'],
                 datasets: [{
                     label: '내 컬렉션',
                     data: Object.values(counts),
-                    backgroundColor: toneColors, // 8색 적용
+                    backgroundColor: toneColors,
                     borderRadius: 50,
-                    barThickness: 20,
+                    barThickness: 16, // 막대가 9개라 조금 더 얇게
                     borderSkipped: false,
                 }]
             },
@@ -328,17 +326,11 @@ function updateAnalysis() {
                 scales: { 
                     x: { 
                         grid: { display: false }, 
-                        ticks: { font: { family: 'Pretendard', size: 11 }, color: '#9ca3af' }
+                        ticks: { font: { family: 'Pretendard', size: 10 }, color: '#9ca3af' }
                     }, 
-                    y: { 
-                        display: false,
-                        grid: { display: false } 
-                    } 
+                    y: { display: false, grid: { display: false } } 
                 },
-                animation: {
-                    duration: 1500,
-                    easing: 'easeOutQuart'
-                }
+                animation: { duration: 1500, easing: 'easeOutQuart' }
             }
         });
     }
@@ -364,7 +356,6 @@ function updateAnalysis() {
 function render(filter = 'all') {
     const grid = document.getElementById('lipstickGrid');
     if (!grid) return;
-
     grid.innerHTML = '';
 
     const filtered = lipsticks.filter(lip => {
@@ -407,10 +398,8 @@ window.deleteItem = function (id) {
 
 window.filterBy = function (category) {
     document.querySelectorAll('.filter-chip').forEach(btn => btn.classList.remove('active'));
-
     let idMap = { 'all': 'filter-all', '봄': 'filter-spring', '여름': 'filter-summer', '가을': 'filter-autumn', '겨울': 'filter-winter' };
     const targetBtn = document.getElementById(idMap[category]);
     if (targetBtn) targetBtn.classList.add('active');
-
     render(category);
 }
